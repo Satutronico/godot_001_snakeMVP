@@ -1,0 +1,6 @@
+# Godot auto-generated cache
+.godot/
+
+# Export builds
+export/
+*.exe
