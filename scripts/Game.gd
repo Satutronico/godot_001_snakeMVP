@@ -37,8 +37,10 @@ var tick_rate     : float = 0.150
 
 var flash_timer   : float = 0.0
 var flash_color   := Color.TRANSPARENT
+var game_time     : float = 0.0
 
 var score_label : Label
+var time_label  : Label
 var level_label : Label
 var over_label  : Label
 
@@ -49,6 +51,14 @@ func _ready() -> void:
 	score_label.add_theme_font_size_override("font_size", 22)
 	score_label.modulate = Color(0.9, 0.9, 0.9)
 	add_child(score_label)
+
+	time_label = Label.new()
+	time_label.position = Vector2(0, 8)
+	time_label.size = Vector2(COLS * CELL, 28)
+	time_label.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+	time_label.add_theme_font_size_override("font_size", 22)
+	time_label.modulate = Color(0.65, 0.65, 0.65)
+	add_child(time_label)
 
 	level_label = Label.new()
 	level_label.position = Vector2(COLS * CELL - 120, 8)
@@ -73,6 +83,7 @@ func _new_game() -> void:
 	score         = 0
 	current_level = 1
 	dead          = false
+	game_time     = 0.0
 	tick_rate     = LEVELS[0].tick
 	tick_timer    = 0.0
 	flash_timer   = 0.0
@@ -92,6 +103,11 @@ func _spawn_food() -> void:
 				free.append(p)
 	free.shuffle()
 	food = free[0]
+
+
+func _fmt_time(secs: float) -> String:
+	var s := int(secs)
+	return "%d:%02d" % [s / 60, s % 60]
 
 
 func _refresh_hud() -> void:
@@ -129,6 +145,9 @@ func _process(delta: float) -> void:
 	if dead:
 		return
 
+	game_time += delta
+	time_label.text = _fmt_time(game_time)
+
 	if flash_timer > 0.0:
 		flash_timer -= delta
 		if flash_timer <= 0.0:
@@ -165,10 +184,10 @@ func _step() -> void:
 func _on_death() -> void:
 	dead = true
 
-	var in_top5 := SaveData.add_result(SaveData.player_name, score, current_level)
+	var in_top5 := SaveData.add_result(SaveData.player_name, score, current_level, game_time)
 	var banner  := "  ★ TOP 5!" if in_top5 else ""
-	over_label.text = "GAME OVER  —  Level %d%s\nScore: %d\n\nEnter = back to menu" % [
-		current_level, banner, score
+	over_label.text = "GAME OVER  —  Level %d%s\nScore: %d   %s\n\nEnter = back to menu" % [
+		current_level, banner, score, _fmt_time(game_time)
 	]
 	over_label.visible = true
 	queue_redraw()

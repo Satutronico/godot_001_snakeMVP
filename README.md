@@ -17,8 +17,8 @@ godot_001_snakeMVP/
 │   └── Game.tscn          # Gameplay scene
 │
 └── scripts/
-    ├── SaveData.gd        # Autoload singleton — loads/saves player name, max score, max level
-    ├── Menu.gd            # Menu screen: name input, level progression table, scene transition
+    ├── SaveData.gd        # Autoload singleton — loads/saves player name and top-5 ranking
+    ├── Menu.gd            # Menu screen: name input, top-5 ranking table, scene transition
     └── Game.gd            # Snake logic, level system, collision, HUD, procedural rendering
 ```
 
@@ -55,6 +55,73 @@ None. This project uses no third-party addons or plugins from the Godot Asset Li
 | **SVG** (hand-written XML) | Procedural icon generation — no external image editor used |
 
 No external asset-generation tools (Blender, Aseprite, GIMP, etc.) are used. All visuals are drawn at runtime by GDScript using Godot's `CanvasItem` draw API.
+
+---
+
+## Godot configuration
+
+Settings defined in `project.godot`:
+
+| Setting | Value | Reason |
+|---|---|---|
+| `config/features` | `"4.6", "Forward Plus"` | Targets Godot 4.6; Forward Plus is the default 3D-capable renderer but is overridden below |
+| `run/main_scene` | `res://scenes/Menu.tscn` | Game starts at the menu, not directly in gameplay |
+| `window/size/viewport_width` | `640` | Fixed grid: 32 columns × 20 px |
+| `window/size/viewport_height` | `640` | Fixed grid: 32 rows × 20 px |
+| `window/size/resizable` | `false` | Pixel grid must not scale or distort |
+| `renderer/rendering_method` | `gl_compatibility` | Lightweight OpenGL 3.3 compatibility renderer — sufficient for 2D, wider hardware support |
+| `renderer/rendering_method.mobile` | `gl_compatibility` | Same renderer enforced on mobile targets |
+| `[autoload] SaveData` | `*res://scripts/SaveData.gd` | `*` prefix makes it a singleton Node, auto-instantiated before any scene loads |
+
+---
+
+## GDScript: `_process` and `_physics_process` usage
+
+Godot provides two main per-frame callbacks:
+
+- **`_process(delta)`** — called every rendered frame; frequency depends on frame rate (uncapped or vsync). `delta` is the time in seconds since the last frame.
+- **`_physics_process(delta)`** — called at a fixed interval (default 60 Hz), decoupled from frame rate. Intended for physics simulation and movement that must be deterministic.
+
+### Why this project uses only `_process`
+
+Snake is a turn-based grid game driven by a **custom software timer** (`tick_timer`), not by continuous physics. There is no rigid-body simulation, no collision physics engine, and no need for deterministic fixed-step integration. Using `_process` is the correct choice here.
+
+### Per-scene breakdown
+
+#### `Menu.gd` — extends `Control`
+
+| Callback | Used | Reason |
+|---|---|---|
+| `_ready()` | Yes | Builds the entire UI tree once at scene load |
+| `_process(delta)` | No | Menu is fully static after `_ready()`; no animation or polling needed |
+| `_physics_process(delta)` | No | No physics involvement |
+
+#### `Game.gd` — extends `Node2D`
+
+| Callback | Used | Reason |
+|---|---|---|
+| `_ready()` | Yes | Creates HUD labels and starts the first game |
+| `_input(event)` | Yes | Reads arrow keys and Enter outside of the frame loop for immediate response |
+| `_process(delta)` | Yes | See table below |
+| `_physics_process(delta)` | No | Movement is grid-based and timer-driven, not physics-based |
+
+What `_process(delta)` handles in `Game.gd`:
+
+| Task | How |
+|---|---|
+| Game timer | `game_time += delta` — real-world elapsed seconds, displayed as `m:ss` in the HUD |
+| Level-up flash | `flash_timer -= delta` — fades a colour overlay over ~0.45 s |
+| Snake movement | `tick_timer += delta`; when it exceeds `tick_rate`, one grid step is executed and the timer resets. `tick_rate` starts at 150 ms and decreases with each level |
+
+The separation between `delta` accumulation (every frame) and `tick_rate` gating (fixed logical steps) means the game loop remains smooth on any frame rate while snake speed stays predictable.
+
+#### `SaveData.gd` — extends `Node` (Autoload singleton)
+
+| Callback | Used | Reason |
+|---|---|---|
+| `_ready()` | No | Data is loaded explicitly via `load_data()` when the menu scene starts |
+| `_process(delta)` | No | Passive data store; no per-frame work needed |
+| `_physics_process(delta)` | No | No physics involvement |
 
 ---
 

@@ -4,10 +4,11 @@ const W := 640
 const H := 640
 
 # Table column layout: [x, width, alignment]
-const COL_RANK  := [45,  50,  HORIZONTAL_ALIGNMENT_CENTER]
-const COL_NAME  := [105, 225, HORIZONTAL_ALIGNMENT_LEFT]
-const COL_SCORE := [340, 120, HORIZONTAL_ALIGNMENT_CENTER]
-const COL_LEVEL := [470, 110, HORIZONTAL_ALIGNMENT_CENTER]
+const COL_RANK  := [28,  44,  HORIZONTAL_ALIGNMENT_CENTER]
+const COL_NAME  := [80,  185, HORIZONTAL_ALIGNMENT_LEFT]
+const COL_SCORE := [272, 100, HORIZONTAL_ALIGNMENT_CENTER]
+const COL_TIME  := [378, 110, HORIZONTAL_ALIGNMENT_CENTER]
+const COL_LEVEL := [494, 110, HORIZONTAL_ALIGNMENT_CENTER]
 
 
 func _ready() -> void:
@@ -73,7 +74,7 @@ func _ready() -> void:
 	add_child(ranking_lbl)
 
 	# Table header
-	_add_row(418, "#", "Name", "Score", "Level", Color(0.60, 0.60, 0.65), 15)
+	_add_row(418, "#", "Name", "Score", "Time", "Level", Color(0.60, 0.60, 0.65), 15)
 
 	# Table rows
 	if SaveData.top5.is_empty():
@@ -88,13 +89,13 @@ func _ready() -> void:
 	else:
 		for i in SaveData.top5.size():
 			var e: Dictionary = SaveData.top5[i]
-			var gold := i == 0
-			var color := Color(1.0, 0.85, 0.30) if gold else Color(0.80, 0.80, 0.80)
+			var color := Color(1.0, 0.85, 0.30) if i == 0 else Color(0.80, 0.80, 0.80)
 			_add_row(
 				444 + i * 26,
 				"#%d" % (i + 1),
 				e.name,
 				str(e.score),
+				_fmt_time(e.time),
 				"Lv %d" % e.level,
 				color,
 				17
@@ -122,12 +123,18 @@ func _ready() -> void:
 	name_input.text_submitted.connect(func(_t: String) -> void: go.call())
 
 
-func _add_row(y: float, rank: String, name: String, score: String, level: String,
-		color: Color, font_size: int) -> void:
+func _fmt_time(secs: float) -> String:
+	var s := int(secs)
+	return "%d:%02d" % [s / 60, s % 60]
+
+
+func _add_row(y: float, rank: String, name: String, score: String, time: String,
+		level: String, color: Color, font_size: int) -> void:
 	var cols := [
 		[rank,  COL_RANK[0],  COL_RANK[1],  COL_RANK[2]],
 		[name,  COL_NAME[0],  COL_NAME[1],  COL_NAME[2]],
 		[score, COL_SCORE[0], COL_SCORE[1], COL_SCORE[2]],
+		[time,  COL_TIME[0],  COL_TIME[1],  COL_TIME[2]],
 		[level, COL_LEVEL[0], COL_LEVEL[1], COL_LEVEL[2]],
 	]
 	for c in cols:
