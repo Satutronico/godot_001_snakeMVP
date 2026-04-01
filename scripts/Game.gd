@@ -43,6 +43,7 @@ var score_label : Label
 var time_label  : Label
 var level_label : Label
 var over_label  : Label
+var fps_label   : Label
 
 
 func _ready() -> void:
@@ -72,6 +73,12 @@ func _ready() -> void:
 	over_label.modulate = Color(1.0, 0.35, 0.35)
 	over_label.visible = false
 	add_child(over_label)
+
+	fps_label = Label.new()
+	fps_label.position = Vector2(8, ROWS * CELL - 22)
+	fps_label.add_theme_font_size_override("font_size", 14)
+	fps_label.modulate = Color(0.40, 0.40, 0.40)
+	add_child(fps_label)
 
 	_new_game()
 
@@ -147,6 +154,7 @@ func _process(delta: float) -> void:
 
 	game_time += delta
 	time_label.text = _fmt_time(game_time)
+	fps_label.text = "FPS: %d" % Engine.get_frames_per_second()
 
 	if flash_timer > 0.0:
 		flash_timer -= delta
