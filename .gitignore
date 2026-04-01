@@ -4,3 +4,6 @@
 # Export builds
 export/
 *.exe
+
+# Claude agent
+CLAUDE.md
